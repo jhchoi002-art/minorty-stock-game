@@ -151,7 +151,7 @@ function renderTeacher(){
         <div class="eventInputRow"><input id="eventMultiplier" type="number" min="1" step="1" value="${esc(eventMultiplier())}"><span>배</span></div>
         <p class="hint">기본은 1배입니다. 특별 이벤트 라운드는 2, 3, 4처럼 입력하세요.</p>
         <div class="stockCards">${STOCKS.map(s=>`<div><b>${s.name}</b><span>${s.base}점</span></div>`).join('')}</div>
-        <button onclick="startRound()">새 라운드 시작</button>
+        <button ${activeRound()>0 && state.status==='open' ? 'class="disabledBtn"' : ''} onclick="startRound()">새 라운드 시작</button>
         <button class="secondary" onclick="resetAnswers()">응답 초기화</button>
         <button class="ghost" onclick="resetRoom()">방 전체 초기화</button>
       </div>
@@ -169,7 +169,7 @@ function renderTeacher(){
       <div class="progress"><div style="width:${progress}%"></div></div>
       <p class="eventBox">이번 라운드 점수 ${fmt(eventMultiplier())}배 적용</p>
       <div class="countGrid">${STOCKS.map((s,i)=>`<div><b>${s.key}</b><span>${counts[i]}명</span><em>${state.showResults?fmt(rs[i])+'점':'?'}</em></div>`).join('')}</div>
-      <button class="reveal" onclick="closeRound()">라운드 마감 + 점수 반영</button>
+      <button class="reveal ${expected>0 && submitted>=expected ? 'readyClose' : ''}" onclick="closeRound()">${expected>0 && submitted>=expected ? '모두 제출 완료! 마감하기' : '라운드 마감 + 점수 반영'}</button>
       <details class="missing"><summary>미제출 학생 ${missing.length}명 보기</summary>${missing.length?missing.map(([id,p])=>`<span>${esc(p.name)}</span>`).join(''):'<p>모두 제출했습니다.</p>'}</details>
     </section>
 
@@ -203,7 +203,20 @@ async function resetRoom(){
 async function closeRound(){
   const snap = await db.ref(roomPath()).once('value');
   const st = snap.val() || {};
+  if(st.status !== 'open'){
+    alert('진행 중인 라운드가 없습니다. 새 라운드를 먼저 시작해주세요.');
+    return;
+  }
   if(st.scored){ await db.ref(roomPath()).update({showResults:true,status:'closed'}); return; }
+  const currentParticipants = participants(st);
+  const currentAnswers = answers(st);
+  const missing = Object.entries(currentParticipants).filter(([id])=>!currentAnswers[id]);
+  if(missing.length > 0){
+    const names = missing.slice(0, 12).map(([id,p]) => `- ${p?.name || '이름없음'}`).join('\n');
+    const more = missing.length > 12 ? `\n외 ${missing.length - 12}명` : '';
+    const ok = confirm(`아직 제출하지 않은 학생이 있습니다.\n그래도 라운드를 마감하시겠습니까?\n\n미제출 학생: ${missing.length}명\n${names}${more}`);
+    if(!ok) return;
+  }
   const {counts} = countsOf(st);
   const rScores = roundScores(counts, st);
   const ans = answers(st), old = scores(st), nextScores = {...old};
