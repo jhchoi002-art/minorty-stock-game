@@ -28,6 +28,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt
 const now = () => Date.now();
 const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
 const fmt = n => Number.isInteger(Number(n)) ? String(Number(n)) : Number(n).toFixed(1).replace(/\.0$/,'');
+const normName = s => String(s || '').trim().replace(/\s+/g,' ').toLowerCase();
 
 function route(mode, extra=''){ location.href = `${location.pathname}?mode=${mode}${extra}`; }
 function code(){ return (room || 'ROOM').toUpperCase(); }
@@ -181,6 +182,12 @@ function renderTeacher(){
   </main>`;
 }
 async function startRound(){
+  const {submitted, expected} = countsOf(state);
+  const missingCount = Math.max(0, expected - submitted);
+  if(state.status === 'open' && expected > 0 && missingCount > 0){
+    const ok = confirm(`아직 제출하지 않은 학생이 ${missingCount}명 있습니다.\n그래도 새 라운드를 시작하시겠습니까?`);
+    if(!ok) return;
+  }
   const event = Math.max(1, Number(document.getElementById('eventMultiplier')?.value || 1));
   beep('start');
   await db.ref(roomPath()).update({
@@ -277,9 +284,30 @@ async function joinStudent(){
   const name=(document.getElementById('sName').value||'').trim();
   if(!room) return alert('방 코드를 입력하세요.');
   if(!name) return alert('이름 또는 번호를 입력하세요.');
-  localStorage.setItem('msg_room_v8', room); localStorage.setItem('msg_room_v8', room); localStorage.setItem('msg_room', room); localStorage.setItem('msg_name', name); localStorage.setItem('msg_joined_'+room, '1');
-  const sid=studentId();
-  await db.ref('stockRoomsV8/'+room+'/participants/'+sid).set({name, joinedAt:now(), lastSeen:now()});
+
+  const roomSnap = await db.ref('stockRoomsV8/'+room).once('value');
+  if(!roomSnap.exists()) return alert('방을 찾을 수 없습니다. 방 코드를 다시 확인하세요.');
+  const roomState = roomSnap.val() || {};
+  const ps = roomState.participants || {};
+  const same = Object.entries(ps).find(([id,p]) => normName(p && p.name) === normName(name));
+  const sid = same ? same[0] : studentId();
+
+  if(same){
+    // 같은 방 코드 + 같은 이름으로 재입장하면 기존 학생 ID를 다시 사용해 점수와 현재 선택을 이어갑니다.
+    localStorage.setItem('msg_student_id_v8', sid);
+  }
+
+  localStorage.setItem('msg_room_v8', room);
+  localStorage.setItem('msg_room', room);
+  localStorage.setItem('msg_name', name);
+  localStorage.setItem('msg_joined_'+room, '1');
+
+  await db.ref('stockRoomsV8/'+room+'/participants/'+sid).update({
+    name,
+    joinedAt: same ? (ps[sid]?.joinedAt || now()) : now(),
+    rejoinedAt: same ? now() : null,
+    lastSeen: now()
+  });
   location.href = `${location.pathname}?mode=student&room=${encodeURIComponent(room)}`;
 }
 async function updateStudentName(v){
