@@ -271,9 +271,7 @@ async function toggleRejoin(id){
     await db.ref(roomPath()+'/participants/'+id).update({allowNewDevice:false, deviceTransferCanceledAt:now()});
     return;
   }
-  if(!confirm('이 학생이 다른 기기로 같은 이름 재입장할 수 있게 허용할까요?
-
-허용 후 학생이 새 기기로 입장하면 자동으로 다시 잠깁니다.')) return;
+  if(!confirm('이 학생이 다른 기기로 같은 이름 재입장할 수 있게 허용할까요?\n\n허용 후 학생이 새 기기로 입장하면 자동으로 다시 잠깁니다.')) return;
   await db.ref(roomPath()+'/participants/'+id).update({allowNewDevice:true, deviceTransferAllowedAt:now()});
 }
 function chartHtml(history){
