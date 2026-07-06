@@ -38,11 +38,30 @@ function studentUrl(){ return `${location.origin}${location.pathname}?mode=stude
 function displayUrl(){ return `${location.origin}${location.pathname}?mode=display&room=${encodeURIComponent(code())}`; }
 function qrUrl(text){ return 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(text); }
 function makeCode(){ return Math.random().toString(36).replace(/[^a-z0-9]/g,'').slice(2,8).toUpperCase(); }
-function studentId(){
-  let id = localStorage.getItem('msg_student_id_v8');
-  if(!id){ id='s_'+Math.random().toString(36).slice(2)+Date.now(); localStorage.setItem('msg_student_id_v8', id); }
+function makeId(prefix='s'){ return prefix+'_'+Math.random().toString(36).slice(2)+Date.now(); }
+function deviceId(){
+  let id = localStorage.getItem('msg_device_id_v8');
+  if(!id){ id=makeId('d'); localStorage.setItem('msg_device_id_v8', id); }
   return id;
 }
+function legacyStudentId(){
+  let id = localStorage.getItem('msg_student_id_v8');
+  if(!id){ id=makeId('s'); localStorage.setItem('msg_student_id_v8', id); }
+  return id;
+}
+function playerKey(r=code()){ return 'msg_player_id_v8_'+String(r||'').toUpperCase(); }
+function studentId(){
+  if(room){
+    const saved = localStorage.getItem(playerKey());
+    if(saved) return saved;
+  }
+  return legacyStudentId();
+}
+function setPlayerId(id, r=code()){
+  if(id && r) localStorage.setItem(playerKey(r), id);
+  if(id) localStorage.setItem('msg_student_id_v8', id); // 구버전 화면과의 호환용
+}
+function newPlayerId(){ return makeId('p'); }
 function connect(cb){
   if(!room) return;
   if(roomRef) roomRef.off();
@@ -91,7 +110,7 @@ function home(){
   $app.innerHTML = `<main class="wrap narrow">
     <section class="hero">
       <div class="logo">📈</div>
-      <h1>소수결 주식 게임 <span>v8</span></h1>
+      <h1>소수결 주식 게임 <span>v8.3</span></h1>
       <p>A·B·C 중 친구들이 적게 고를 주식을 예측하세요. 학생은 라운드 마감 전까지 조용히 선택을 바꿀 수 있습니다.</p>
       <div class="homeButtons">
         <button onclick="createRoom()">교사용 방 만들기</button>
@@ -134,7 +153,7 @@ function renderTeacher(){
   const b = board();
   const history = Array.isArray(state.history) ? state.history : [];
   $app.innerHTML = `<main class="wrap">
-    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v8</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · 선택 수정 가능 · 무음 학생 화면 · n배 이벤트</p></div>
+    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v8.3</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · 선택 수정 가능 · 무음 학생 화면 · n배 이벤트</p></div>
     <div class="topButtons"><button class="ghost" onclick="fullScreen()">전체화면</button><button class="ghost" onclick="route('home')">처음으로</button></div></div>
 
     <section class="grid">
@@ -182,11 +201,9 @@ function renderTeacher(){
   </main>`;
 }
 async function startRound(){
-  const {submitted, expected} = countsOf(state);
-  const missingCount = Math.max(0, expected - submitted);
-  if(state.status === 'open' && expected > 0 && missingCount > 0){
-    const ok = confirm(`아직 제출하지 않은 학생이 ${missingCount}명 있습니다.\n그래도 새 라운드를 시작하시겠습니까?`);
-    if(!ok) return;
+  if(activeRound() > 0 && state.status === 'open'){
+    alert('이전 라운드를 먼저 마감해주세요.');
+    return;
   }
   const event = Math.max(1, Number(document.getElementById('eventMultiplier')?.value || 1));
   beep('start');
@@ -237,7 +254,15 @@ function rankingHtml(b){
 function studentListHtml(){
   const ps = Object.entries(participants());
   if(!ps.length) return '<p class="hint">아직 입장한 학생이 없습니다.</p>';
-  return `<div class="studentList">${ps.map(([id,p])=>{const a=answers()[id]; return `<span>${a?'✅':'⬜'} ${esc(p.name)}${a?' · '+STOCKS[Number(a.choice)]?.key:''}</span>`}).join('')}</div>`;
+  return `<div class="studentList">${ps.map(([id,p])=>{
+    const a=answers()[id];
+    const deviceState = p?.allowNewDevice ? ' · 새 기기 허용 중' : (p?.deviceId ? '' : ' · 기기 미등록');
+    return `<span>${a?'✅':'⬜'} ${esc(p.name)}${a?' · '+STOCKS[Number(a.choice)]?.key:''}${deviceState}<button class="tinyBtn" onclick="allowRejoin('${esc(id)}')">재입장 허용</button></span>`
+  }).join('')}</div>`;
+}
+async function allowRejoin(id){
+  if(!confirm('이 학생이 다른 기기로 같은 이름 재입장할 수 있게 허용할까요?')) return;
+  await db.ref(roomPath()+'/participants/'+id).update({deviceId:null, allowNewDevice:true, deviceReleasedAt:now()});
 }
 function chartHtml(history){
   if(!history.length) return '<p class="hint">라운드가 마감되면 그래프가 나타납니다.</p>';
@@ -281,7 +306,7 @@ function renderStudent(){
   const myAnswer = answers()[sid];
   const canSubmit = state.status==='open' && opened && name.trim();
   const {submitted, expected} = countsOf();
-  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임 <span>학생 v8</span></h1>
+  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임 <span>학생 v8.3</span></h1>
     <section class="card stage tabletStage"><div class="studentNameBox"><label>이름 또는 번호</label><input id="sName2" value="${esc(name)}" onchange="updateStudentName(this.value)"></div>
     <div class="roundBadge">${activeRound()?activeRound()+'라운드':'대기 중'} · 제출 ${submitted}/${expected}</div><div class="landscapeNotice">갤럭시 탭은 가로모드에서 A/B/C 버튼이 크게 보입니다.</div>
     <h2>${state.status==='open'?'어떤 주식을 살까요?':'선생님이 라운드를 시작할 때까지 기다려 주세요.'}</h2>
@@ -302,20 +327,38 @@ async function joinStudent(){
   if(!roomSnap.exists()) return alert('방을 찾을 수 없습니다. 방 코드를 다시 확인하세요.');
   const roomState = roomSnap.val() || {};
   const ps = roomState.participants || {};
-  const currentSid = studentId();
+  const myDeviceId = deviceId();
+  const savedForRoom = localStorage.getItem(playerKey(room));
+  const legacyId = localStorage.getItem('msg_student_id_v8');
   const same = Object.entries(ps).find(([id,p]) => normName(p && p.name) === normName(name));
 
-  if(same && same[0] !== currentSid){
-    return alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.');
-  }
-
-  const sid = currentSid;
+  let sid = savedForRoom || legacyId || newPlayerId();
+  let isResume = false;
 
   if(same){
-    // 같은 기기 + 같은 이름으로 재입장하면 기존 점수와 현재 선택을 이어갑니다.
-    localStorage.setItem('msg_student_id_v8', sid);
+    const [existingId, existingPlayer] = same;
+    const existingDevice = existingPlayer?.deviceId || null;
+    const sameDevice = existingDevice && existingDevice === myDeviceId;
+    const sameSavedPlayer = existingId === savedForRoom || existingId === legacyId;
+    const teacherAllowedNewDevice = existingPlayer?.allowNewDevice === true;
+
+    if(sameDevice || sameSavedPlayer){
+      // 같은 기기이거나 이 브라우저에 저장된 기존 학생이면 이어하기
+      sid = existingId;
+      isResume = true;
+    }else if(teacherAllowedNewDevice){
+      // 교사가 재입장을 허용한 경우에만 새 기기로 기존 점수 이어받기
+      sid = existingId;
+      isResume = true;
+    }else{
+      return alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.');
+    }
+  }else{
+    // 저장된 ID가 다른 학생에게 이미 쓰이고 있으면 새 ID를 발급
+    if(sid && ps[sid] && normName(ps[sid]?.name) !== normName(name)) sid = newPlayerId();
   }
 
+  setPlayerId(sid, room);
   localStorage.setItem('msg_room_v8', room);
   localStorage.setItem('msg_room', room);
   localStorage.setItem('msg_name', name);
@@ -323,8 +366,10 @@ async function joinStudent(){
 
   await db.ref('stockRoomsV8/'+room+'/participants/'+sid).update({
     name,
-    joinedAt: same ? (ps[sid]?.joinedAt || now()) : now(),
-    rejoinedAt: same ? now() : null,
+    deviceId: myDeviceId,
+    allowNewDevice:false,
+    joinedAt: ps[sid]?.joinedAt || now(),
+    rejoinedAt: isResume ? now() : null,
     lastSeen: now()
   });
   location.href = `${location.pathname}?mode=student&room=${encodeURIComponent(room)}`;
@@ -346,7 +391,7 @@ async function updateStudentName(v){
     }
   }
   localStorage.setItem('msg_name', name);
-  if(room && name) await db.ref(roomPath()+'/participants/'+sid).update({name,lastSeen:now()});
+  if(room && name) await db.ref(roomPath()+'/participants/'+sid).update({name,deviceId:deviceId(),allowNewDevice:false,lastSeen:now()});
 }
 async function submitAnswer(choice){
   const name=(document.getElementById('sName2')?.value||localStorage.getItem('msg_name')||'').trim();
