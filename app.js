@@ -302,11 +302,17 @@ async function joinStudent(){
   if(!roomSnap.exists()) return alert('방을 찾을 수 없습니다. 방 코드를 다시 확인하세요.');
   const roomState = roomSnap.val() || {};
   const ps = roomState.participants || {};
+  const currentSid = studentId();
   const same = Object.entries(ps).find(([id,p]) => normName(p && p.name) === normName(name));
-  const sid = same ? same[0] : studentId();
+
+  if(same && same[0] !== currentSid){
+    return alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.');
+  }
+
+  const sid = currentSid;
 
   if(same){
-    // 같은 방 코드 + 같은 이름으로 재입장하면 기존 학생 ID를 다시 사용해 점수와 현재 선택을 이어갑니다.
+    // 같은 기기 + 같은 이름으로 재입장하면 기존 점수와 현재 선택을 이어갑니다.
     localStorage.setItem('msg_student_id_v8', sid);
   }
 
@@ -324,8 +330,23 @@ async function joinStudent(){
   location.href = `${location.pathname}?mode=student&room=${encodeURIComponent(room)}`;
 }
 async function updateStudentName(v){
-  const name=(v||'').trim(); localStorage.setItem('msg_name', name);
-  if(room && name) await db.ref(roomPath()+'/participants/'+studentId()).update({name,lastSeen:now()});
+  const name=(v||'').trim();
+  if(!name) return;
+  const sid = studentId();
+  if(room){
+    const snap = await db.ref(roomPath()+'/participants').once('value');
+    const ps = snap.val() || {};
+    const duplicate = Object.entries(ps).find(([id,p]) => id !== sid && normName(p && p.name) === normName(name));
+    if(duplicate){
+      alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.');
+      const oldName = localStorage.getItem('msg_name') || '';
+      const input = document.getElementById('sName2');
+      if(input) input.value = oldName;
+      return;
+    }
+  }
+  localStorage.setItem('msg_name', name);
+  if(room && name) await db.ref(roomPath()+'/participants/'+sid).update({name,lastSeen:now()});
 }
 async function submitAnswer(choice){
   const name=(document.getElementById('sName2')?.value||localStorage.getItem('msg_name')||'').trim();
