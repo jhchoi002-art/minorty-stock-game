@@ -293,8 +293,7 @@ async function submitAnswer(choice){
   await db.ref(roomPath()+'/answers/'+studentId()).set({choice,name,at:now()});
   localStorage.setItem('msg_name', name);
   localStorage.setItem('msg_submitted_'+code(), state.openedAt);
-  beep('click');
-  alert('선택이 저장되었습니다. 라운드 종료 전까지 다시 선택할 수 있습니다.');
+  // 학생 선택/수정 시에는 효과음과 알림창을 띄우지 않습니다.
   renderStudent();
 }
 function miniResultHtml(){
