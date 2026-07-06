@@ -4,3 +4,40 @@
 .choice.selected{outline:4px solid rgba(37,99,235,.45); transform:translateY(-3px) scale(1.02); box-shadow:0 16px 40px rgba(37,99,235,.25)}
 .choice.selected::after{content:'현재 선택'; position:absolute; right:12px; top:10px; background:#111827; color:white; border-radius:999px; padding:4px 9px; font-size:12px; font-weight:800}
 .choice{position:relative}
+
+
+/* v8: 학생 태블릿 가로모드 최적화 + 무음 선택 UI */
+.landscapeNotice{display:none;background:#eff6ff;border:2px solid #bfdbfe;color:#1d4ed8;border-radius:16px;padding:10px 14px;margin:8px 0 14px;font-weight:900;text-align:center}
+.student .tabletStage{overflow:hidden}
+.student .choice{transition:transform .18s ease, box-shadow .18s ease, outline-color .18s ease}
+.student .choice:active{transform:scale(.985)}
+.student .status{background:#f0fdf4;border:2px solid #bbf7d0;border-radius:18px;padding:14px;color:#166534}
+.student .eventBox{font-size:22px;text-align:center}
+@media (orientation:portrait) and (max-width:1100px){
+  .landscapeNotice{display:block}
+}
+@media (orientation:landscape) and (min-width:900px) and (max-height:900px){
+  body{background:linear-gradient(135deg,#eef2ff,#f8fafc)}
+  .wrap.student{max-width:none;width:100vw;min-height:100vh;padding:12px 16px;display:flex;flex-direction:column;justify-content:center}
+  .student h1{font-size:30px;margin:2px 0 8px;text-align:left}
+  .student h1 span{font-size:17px}
+  .student .tabletStage{margin:0;padding:16px;border-radius:24px;min-height:calc(100vh - 62px);display:grid;grid-template-columns:300px 1fr;grid-template-rows:auto auto 1fr auto;column-gap:16px;align-items:stretch}
+  .student .studentNameBox{grid-column:1;grid-row:1 / span 2;margin:0;padding:12px;align-self:start}
+  .student .studentNameBox label{font-size:14px;margin:2px 0 5px}
+  .student .studentNameBox input{font-size:18px;padding:10px;border-radius:12px}
+  .student .roundBadge{grid-column:2;grid-row:1;justify-self:start;font-size:17px;margin:0 0 6px;padding:8px 12px}
+  .student .landscapeNotice{display:none}
+  .student .tabletStage h2{grid-column:2;grid-row:2;font-size:25px;margin:0 0 8px;line-height:1.15}
+  .student .eventBox{grid-column:1;grid-row:3;font-size:20px;margin:12px 0 0;display:flex;align-items:center;justify-content:center;min-height:84px}
+  .student .choices{grid-column:2;grid-row:3;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;height:100%}
+  .student .choice{height:100%;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:26px;padding:16px;line-height:1.1}
+  .student .choice b{font-size:76px;line-height:1;margin-bottom:8px}
+  .student .choice span{font-size:28px;font-weight:1000}
+  .student .choice em{font-size:22px;margin-top:10px;grid-column:auto}
+  .student .choice.selected{outline:6px solid rgba(250,204,21,.95);transform:translateY(-4px) scale(1.01);box-shadow:0 22px 50px rgba(15,23,42,.23)}
+  .student .choice.selected::after{font-size:16px;right:16px;top:14px;padding:7px 13px;background:#facc15;color:#111827}
+  .student .status{grid-column:1 / span 2;grid-row:4;font-size:21px;margin:10px 0 0;padding:11px;min-height:auto}
+}
+@media (orientation:landscape) and (min-width:1100px) and (max-height:820px){
+  .student .choice b{font-size:88px}.student .choice span{font-size:32px}.student .choice em{font-size:24px}
+}

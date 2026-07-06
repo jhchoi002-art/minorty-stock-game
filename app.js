@@ -13,7 +13,7 @@ const db = firebase.database();
 const $app = document.getElementById('app');
 const qs = new URLSearchParams(location.search);
 const MODE = qs.get('mode') || 'home';
-let room = qs.get('room') || localStorage.getItem('msg_room') || '';
+let room = qs.get('room') || localStorage.getItem('msg_room_v8') || localStorage.getItem('msg_room') || '';
 let roomRef = null;
 let state = {};
 
@@ -31,15 +31,15 @@ const fmt = n => Number.isInteger(Number(n)) ? String(Number(n)) : Number(n).toF
 
 function route(mode, extra=''){ location.href = `${location.pathname}?mode=${mode}${extra}`; }
 function code(){ return (room || 'ROOM').toUpperCase(); }
-function roomPath(){ return 'stockRoomsV7/'+code(); }
+function roomPath(){ return 'stockRoomsV8/'+code(); }
 function teacherUrl(){ return `${location.origin}${location.pathname}?mode=teacher&room=${encodeURIComponent(code())}`; }
 function studentUrl(){ return `${location.origin}${location.pathname}?mode=student&room=${encodeURIComponent(code())}`; }
 function displayUrl(){ return `${location.origin}${location.pathname}?mode=display&room=${encodeURIComponent(code())}`; }
 function qrUrl(text){ return 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(text); }
 function makeCode(){ return Math.random().toString(36).replace(/[^a-z0-9]/g,'').slice(2,8).toUpperCase(); }
 function studentId(){
-  let id = localStorage.getItem('msg_student_id');
-  if(!id){ id='s_'+Math.random().toString(36).slice(2)+Date.now(); localStorage.setItem('msg_student_id', id); }
+  let id = localStorage.getItem('msg_student_id_v8');
+  if(!id){ id='s_'+Math.random().toString(36).slice(2)+Date.now(); localStorage.setItem('msg_student_id_v8', id); }
   return id;
 }
 function connect(cb){
@@ -90,8 +90,8 @@ function home(){
   $app.innerHTML = `<main class="wrap narrow">
     <section class="hero">
       <div class="logo">📈</div>
-      <h1>소수결 주식 게임 <span>v7</span></h1>
-      <p>친구들이 적게 고를 주식을 예측하세요. 소수 선택은 2배, 다수 선택은 절반! 이벤트 라운드는 n배 점수가 적용됩니다.</p>
+      <h1>소수결 주식 게임 <span>v8</span></h1>
+      <p>A·B·C 중 친구들이 적게 고를 주식을 예측하세요. 학생은 라운드 마감 전까지 조용히 선택을 바꿀 수 있습니다.</p>
       <div class="homeButtons">
         <button onclick="createRoom()">교사용 방 만들기</button>
         <button class="blue" onclick="route('student')">학생 입장</button>
@@ -107,7 +107,7 @@ function home(){
 async function createRoom(){
   const custom = prompt('방 코드를 직접 입력하거나, 비워두면 자동 생성됩니다.\n예: 6-3, BONGDAE, STOCK1') || '';
   room = (custom.trim() || makeCode()).replace(/\s+/g,'').toUpperCase();
-  localStorage.setItem('msg_room', room);
+  localStorage.setItem('msg_room_v8', room); localStorage.setItem('msg_room', room);
   const ref = db.ref(roomPath());
   const snap = await ref.once('value');
   if(!snap.exists()){
@@ -133,7 +133,7 @@ function renderTeacher(){
   const b = board();
   const history = Array.isArray(state.history) ? state.history : [];
   $app.innerHTML = `<main class="wrap">
-    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v7</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · n배 이벤트 · 라운드별 그래프</p></div>
+    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v8</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · 선택 수정 가능 · 무음 학생 화면 · n배 이벤트</p></div>
     <div class="topButtons"><button class="ghost" onclick="fullScreen()">전체화면</button><button class="ghost" onclick="route('home')">처음으로</button></div></div>
 
     <section class="grid">
@@ -261,9 +261,9 @@ function renderStudent(){
   const myAnswer = answers()[sid];
   const canSubmit = state.status==='open' && opened && name.trim();
   const {submitted, expected} = countsOf();
-  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임</h1>
-    <section class="card stage"><div class="studentNameBox"><label>이름 또는 번호</label><input id="sName2" value="${esc(name)}" onchange="updateStudentName(this.value)"></div>
-    <div class="roundBadge">${activeRound()?activeRound()+'라운드':'대기 중'} · 제출 ${submitted}/${expected}</div>
+  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임 <span>학생 v8</span></h1>
+    <section class="card stage tabletStage"><div class="studentNameBox"><label>이름 또는 번호</label><input id="sName2" value="${esc(name)}" onchange="updateStudentName(this.value)"></div>
+    <div class="roundBadge">${activeRound()?activeRound()+'라운드':'대기 중'} · 제출 ${submitted}/${expected}</div><div class="landscapeNotice">갤럭시 탭은 가로모드에서 A/B/C 버튼이 크게 보입니다.</div>
     <h2>${state.status==='open'?'어떤 주식을 살까요?':'선생님이 라운드를 시작할 때까지 기다려 주세요.'}</h2>
     <p class="eventBox">이번 라운드 점수 ${fmt(eventMultiplier())}배 적용</p>
     <div class="choices">${STOCKS.map((s,i)=>`<button class="choice stock${i} ${myAnswer && Number(myAnswer.choice)===i ? 'selected' : ''}" ${canSubmit?'':'disabled'} onclick="submitAnswer(${i})"><b>${s.key}</b><span>${s.name}</span><em>기본 ${s.base}점</em></button>`).join('')}</div>
@@ -277,9 +277,9 @@ async function joinStudent(){
   const name=(document.getElementById('sName').value||'').trim();
   if(!room) return alert('방 코드를 입력하세요.');
   if(!name) return alert('이름 또는 번호를 입력하세요.');
-  localStorage.setItem('msg_room', room); localStorage.setItem('msg_name', name); localStorage.setItem('msg_joined_'+room, '1');
+  localStorage.setItem('msg_room_v8', room); localStorage.setItem('msg_room_v8', room); localStorage.setItem('msg_room', room); localStorage.setItem('msg_name', name); localStorage.setItem('msg_joined_'+room, '1');
   const sid=studentId();
-  await db.ref('stockRoomsV7/'+room+'/participants/'+sid).set({name, joinedAt:now(), lastSeen:now()});
+  await db.ref('stockRoomsV8/'+room+'/participants/'+sid).set({name, joinedAt:now(), lastSeen:now()});
   location.href = `${location.pathname}?mode=student&room=${encodeURIComponent(room)}`;
 }
 async function updateStudentName(v){
