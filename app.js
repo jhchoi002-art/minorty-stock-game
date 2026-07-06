@@ -110,7 +110,7 @@ function home(){
   $app.innerHTML = `<main class="wrap narrow">
     <section class="hero">
       <div class="logo">📈</div>
-      <h1>소수결 주식 게임 <span>v8.3</span></h1>
+      <h1>소수결 주식 게임 <span>v8.4</span></h1>
       <p>A·B·C 중 친구들이 적게 고를 주식을 예측하세요. 학생은 라운드 마감 전까지 조용히 선택을 바꿀 수 있습니다.</p>
       <div class="homeButtons">
         <button onclick="createRoom()">교사용 방 만들기</button>
@@ -153,7 +153,7 @@ function renderTeacher(){
   const b = board();
   const history = Array.isArray(state.history) ? state.history : [];
   $app.innerHTML = `<main class="wrap">
-    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v8.3</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · 선택 수정 가능 · 무음 학생 화면 · n배 이벤트</p></div>
+    <div class="top"><div><h1>소수결 주식 게임 <span>교사용 v8.4</span></h1><p>방 코드 ${esc(code())} · QR 입장 · 실시간 제출 · 선택 수정 가능 · 무음 학생 화면 · n배 이벤트</p></div>
     <div class="topButtons"><button class="ghost" onclick="fullScreen()">전체화면</button><button class="ghost" onclick="route('home')">처음으로</button></div></div>
 
     <section class="grid">
@@ -256,13 +256,25 @@ function studentListHtml(){
   if(!ps.length) return '<p class="hint">아직 입장한 학생이 없습니다.</p>';
   return `<div class="studentList">${ps.map(([id,p])=>{
     const a=answers()[id];
-    const deviceState = p?.allowNewDevice ? ' · 새 기기 허용 중' : (p?.deviceId ? '' : ' · 기기 미등록');
-    return `<span>${a?'✅':'⬜'} ${esc(p.name)}${a?' · '+STOCKS[Number(a.choice)]?.key:''}${deviceState}<button class="tinyBtn" onclick="allowRejoin('${esc(id)}')">재입장 허용</button></span>`
+    const allow = p?.allowNewDevice === true;
+    const deviceState = allow ? ' · 새 기기 재입장 허용 중' : (p?.deviceId ? ' · 기기 잠금' : ' · 기기 미등록');
+    const buttonText = allow ? '재입장 허용 취소' : '재입장 허용';
+    const buttonClass = allow ? 'tinyBtn dangerTiny' : 'tinyBtn';
+    return `<span>${a?'✅':'⬜'} ${esc(p.name)}${a?' · '+STOCKS[Number(a.choice)]?.key:''}${deviceState}<button class="${buttonClass}" onclick="toggleRejoin('${esc(id)}')">${buttonText}</button></span>`
   }).join('')}</div>`;
 }
-async function allowRejoin(id){
-  if(!confirm('이 학생이 다른 기기로 같은 이름 재입장할 수 있게 허용할까요?')) return;
-  await db.ref(roomPath()+'/participants/'+id).update({deviceId:null, allowNewDevice:true, deviceReleasedAt:now()});
+async function toggleRejoin(id){
+  const snap = await db.ref(roomPath()+'/participants/'+id).once('value');
+  const p = snap.val() || {};
+  if(p.allowNewDevice === true){
+    if(!confirm('재입장 허용을 취소할까요?')) return;
+    await db.ref(roomPath()+'/participants/'+id).update({allowNewDevice:false, deviceTransferCanceledAt:now()});
+    return;
+  }
+  if(!confirm('이 학생이 다른 기기로 같은 이름 재입장할 수 있게 허용할까요?
+
+허용 후 학생이 새 기기로 입장하면 자동으로 다시 잠깁니다.')) return;
+  await db.ref(roomPath()+'/participants/'+id).update({allowNewDevice:true, deviceTransferAllowedAt:now()});
 }
 function chartHtml(history){
   if(!history.length) return '<p class="hint">라운드가 마감되면 그래프가 나타납니다.</p>';
@@ -293,6 +305,23 @@ function student(){
   if(room) connect(renderStudent);
   renderStudent();
 }
+async function assertCurrentDevice(){
+  if(!room || !localStorage.getItem('msg_joined_'+code())) return true;
+  const sid = studentId();
+  const snap = await db.ref(roomPath()+'/participants/'+sid).once('value');
+  const p = snap.val();
+  if(!p) return true;
+  const registeredDevice = p.deviceId || null;
+  const myDeviceId = deviceId();
+  if(registeredDevice && registeredDevice !== myDeviceId){
+    localStorage.removeItem('msg_joined_'+code());
+    localStorage.removeItem(playerKey());
+    alert('이 이름은 다른 기기에서 사용 중입니다. 다른 이름으로 입장하거나 선생님께 재입장 허용을 요청하세요.');
+    route('student','&room='+encodeURIComponent(code()));
+    return false;
+  }
+  return true;
+}
 function renderStudent(){
   const name = localStorage.getItem('msg_name') || '';
   const sid = studentId();
@@ -306,7 +335,7 @@ function renderStudent(){
   const myAnswer = answers()[sid];
   const canSubmit = state.status==='open' && opened && name.trim();
   const {submitted, expected} = countsOf();
-  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임 <span>학생 v8.3</span></h1>
+  $app.innerHTML = `<main class="wrap student"><h1>소수결 주식 게임 <span>학생 v8.4</span></h1>
     <section class="card stage tabletStage"><div class="studentNameBox"><label>이름 또는 번호</label><input id="sName2" value="${esc(name)}" onchange="updateStudentName(this.value)"></div>
     <div class="roundBadge">${activeRound()?activeRound()+'라운드':'대기 중'} · 제출 ${submitted}/${expected}</div><div class="landscapeNotice">갤럭시 탭은 가로모드에서 A/B/C 버튼이 크게 보입니다.</div>
     <h2>${state.status==='open'?'어떤 주식을 살까요?':'선생님이 라운드를 시작할 때까지 기다려 주세요.'}</h2>
@@ -329,32 +358,33 @@ async function joinStudent(){
   const ps = roomState.participants || {};
   const myDeviceId = deviceId();
   const savedForRoom = localStorage.getItem(playerKey(room));
-  const legacyId = localStorage.getItem('msg_student_id_v8');
   const same = Object.entries(ps).find(([id,p]) => normName(p && p.name) === normName(name));
 
-  let sid = savedForRoom || legacyId || newPlayerId();
+  let sid = savedForRoom || newPlayerId();
   let isResume = false;
+  let transferFromDevice = null;
 
   if(same){
     const [existingId, existingPlayer] = same;
     const existingDevice = existingPlayer?.deviceId || null;
     const sameDevice = existingDevice && existingDevice === myDeviceId;
-    const sameSavedPlayer = existingId === savedForRoom || existingId === legacyId;
     const teacherAllowedNewDevice = existingPlayer?.allowNewDevice === true;
+    const legacySameBrowser = !existingDevice && savedForRoom === existingId;
 
-    if(sameDevice || sameSavedPlayer){
-      // 같은 기기이거나 이 브라우저에 저장된 기존 학생이면 이어하기
+    if(sameDevice || legacySameBrowser){
+      // 같은 기기(또는 구버전에서 같은 브라우저에 저장된 학생)만 이어하기 허용
       sid = existingId;
       isResume = true;
     }else if(teacherAllowedNewDevice){
-      // 교사가 재입장을 허용한 경우에만 새 기기로 기존 점수 이어받기
+      // 교사가 허용한 경우에만 새 기기로 이전 가능. 이전 후 자동으로 다시 잠금.
       sid = existingId;
       isResume = true;
+      transferFromDevice = existingDevice || null;
     }else{
-      return alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.');
+      return alert('이미 있는 이름입니다. 다른 이름을 입력해주세요.\n\n기기를 바꾸어 이어하려면 선생님께 재입장 허용을 요청하세요.');
     }
   }else{
-    // 저장된 ID가 다른 학생에게 이미 쓰이고 있으면 새 ID를 발급
+    // 저장된 ID가 다른 이름으로 이미 쓰이고 있으면 새 ID를 발급
     if(sid && ps[sid] && normName(ps[sid]?.name) !== normName(name)) sid = newPlayerId();
   }
 
@@ -370,11 +400,14 @@ async function joinStudent(){
     allowNewDevice:false,
     joinedAt: ps[sid]?.joinedAt || now(),
     rejoinedAt: isResume ? now() : null,
+    transferredFromDevice: transferFromDevice,
+    transferredAt: transferFromDevice ? now() : (ps[sid]?.transferredAt || null),
     lastSeen: now()
   });
   location.href = `${location.pathname}?mode=student&room=${encodeURIComponent(room)}`;
 }
 async function updateStudentName(v){
+  if(!(await assertCurrentDevice())) return;
   const name=(v||'').trim();
   if(!name) return;
   const sid = studentId();
@@ -394,9 +427,10 @@ async function updateStudentName(v){
   if(room && name) await db.ref(roomPath()+'/participants/'+sid).update({name,deviceId:deviceId(),allowNewDevice:false,lastSeen:now()});
 }
 async function submitAnswer(choice){
+  if(!(await assertCurrentDevice())) return;
   const name=(document.getElementById('sName2')?.value||localStorage.getItem('msg_name')||'').trim();
   if(!name) return alert('이름을 입력하세요.');
-  await db.ref(roomPath()+'/participants/'+studentId()).update({name,lastSeen:now()});
+  await db.ref(roomPath()+'/participants/'+studentId()).update({name,deviceId:deviceId(),allowNewDevice:false,lastSeen:now()});
   await db.ref(roomPath()+'/answers/'+studentId()).set({choice,name,at:now()});
   localStorage.setItem('msg_name', name);
   localStorage.setItem('msg_submitted_'+code(), state.openedAt);
