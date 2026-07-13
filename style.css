@@ -42,3 +42,90 @@
   .student .choice b{font-size:88px}.student .choice span{font-size:32px}.student .choice em{font-size:24px}
 }
 .tinyBtn{margin-left:8px;padding:5px 8px;border-radius:10px;border:1px solid rgba(37,99,235,.25);background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;cursor:pointer}.tinyBtn:hover{background:#dbeafe}
+
+/* v8.5 피드백 반영: A 파랑 30점 / B 노랑 40점 / C 빨강 50점 */
+.stock0{background:#2563eb}.stock1{background:#eab308;color:#111827}.stock2{background:#dc2626}
+.stockText0{color:#2563eb!important}.stockText1{color:#a16207!important}.stockText2{color:#dc2626!important}
+.stockPanel0{border-color:#93c5fd!important;background:#eff6ff!important;color:#1e3a8a!important}
+.stockPanel1{border-color:#fde047!important;background:#fefce8!important;color:#713f12!important}
+.stockPanel2{border-color:#fca5a5!important;background:#fef2f2!important;color:#7f1d1d!important}
+.stockCards div:nth-child(1){border-color:#93c5fd;background:#eff6ff}.stockCards div:nth-child(1) span{color:#2563eb}
+.stockCards div:nth-child(2){border-color:#fde047;background:#fefce8}.stockCards div:nth-child(2) span{color:#a16207}
+.stockCards div:nth-child(3){border-color:#fca5a5;background:#fef2f2}.stockCards div:nth-child(3) span{color:#dc2626}
+.l1 circle{stroke:#eab308}
+
+.myStanding{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f8fafc;border:2px solid #cbd5e1;border-radius:18px;padding:12px 16px;margin:0 0 12px}
+.myStanding b,.myStanding span{font-size:20px;font-weight:1000}.myStanding span{text-align:right}.myStanding small{grid-column:1/-1;text-align:center;color:#64748b;font-weight:800}
+.liveChoiceCounts{display:grid;grid-template-columns:auto repeat(3,1fr);gap:10px;align-items:center;background:#fff;border:2px solid #e2e8f0;border-radius:18px;padding:12px 16px;margin:14px 0}
+.liveChoiceCounts strong{font-size:18px}.liveChoiceCounts span{font-size:18px;font-weight:900;text-align:center;border-radius:12px;padding:8px;background:#f8fafc}
+
+.displayChoices.live{margin-top:12px}.displayChoices.live .displayChoice em{display:block;font-style:normal;font-size:52px;margin-top:12px}
+.displayHint{text-align:center;color:#e2e8f0;font-weight:900;font-size:20px}.choosingGrid{grid-template-columns:.8fr 1.4fr}.resultGrid{grid-template-columns:.8fr 1.4fr}.fullRanking{max-height:68vh;overflow:auto}.allRanks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.allRanks .rankBig{margin:0;grid-template-columns:54px 1fr 105px 64px;padding:10px 12px}
+.displayCard .chart{background:rgba(255,255,255,.97)}
+
+@media (orientation:landscape) and (min-width:900px) and (max-height:900px){
+  .student .tabletStage{grid-template-rows:auto auto 1fr auto auto}
+  .student .myStanding{grid-column:1;grid-row:2;margin:8px 0 0;display:block;text-align:center;padding:10px}
+  .student .myStanding b,.student .myStanding span{display:block;text-align:center;font-size:17px}.student .myStanding small{display:block;font-size:12px;margin-top:4px}
+  .student .roundBadge{grid-row:1}
+  .student .tabletStage h2{grid-row:2}
+  .student .eventBox{grid-row:3}
+  .student .choices{grid-row:3}
+  .student .liveChoiceCounts{grid-column:1 / span 2;grid-row:4;margin:8px 0 0;padding:8px 12px;grid-template-columns:auto repeat(3,1fr)}
+  .student .liveChoiceCounts strong,.student .liveChoiceCounts span{font-size:15px;padding:5px}
+  .student .status{grid-row:5;margin-top:7px;font-size:18px;padding:8px}
+}
+@media(max-width:850px){.myStanding{grid-template-columns:1fr}.myStanding span{text-align:left}.liveChoiceCounts{grid-template-columns:1fr}.allRanks{grid-template-columns:1fr}.choosingGrid,.resultGrid{grid-template-columns:1fr}}
+
+/* v8.6: 선택 중 A/B/C 인원 비공개 */
+.teacherPrivacyNotice{display:flex;flex-direction:column;gap:6px;padding:16px 18px;margin:14px 0;border-radius:16px;background:#f5f7fb;border:1px solid #dfe5ef;text-align:center}
+.teacherPrivacyNotice b{font-size:18px;color:#25324a}
+.teacherPrivacyNotice span{font-size:14px;color:#667085;line-height:1.5}
+.privateChoosing{align-items:stretch}
+.submitOnlyCard{display:flex;flex-direction:column;justify-content:center;min-height:330px;text-align:center}
+.bigSubmitStatus{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:28px 0 20px}
+.bigSubmitStatus b{font-size:96px;line-height:.9;font-weight:900}
+.bigSubmitStatus span{font-size:30px;font-weight:800;color:#667085}
+.submitProgress{height:24px;border-radius:999px;background:#e9edf5;overflow:hidden;margin:8px 0 18px}
+.submitProgress>div{height:100%;border-radius:999px;background:linear-gradient(90deg,#4f7cff,#35c68f);transition:width .35s ease}
+@media(max-width:900px){.bigSubmitStatus b{font-size:64px}.bigSubmitStatus span{font-size:22px}}
+
+
+/* v8.7 전자칠판 인터페이스 개선 */
+.graphFocusCard{min-height:420px}
+.studentStandingGuide{display:flex;flex-direction:column;gap:6px;margin-top:22px;padding:15px 18px;border-radius:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)}
+.studentStandingGuide b{font-size:20px;color:#fff}
+.studentStandingGuide span{font-size:16px;color:#dbeafe;font-weight:800;line-height:1.45}
+.displayCard.fullRanking{max-height:none;overflow:visible}
+.allRanks{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1400px){.allRanks{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.allRanks{grid-template-columns:1fr}.graphFocusCard{min-height:320px}}
+
+/* v8.8 electronic board graph visibility */
+.displayCard.graphFocusCard .chart{display:block!important;min-height:330px;max-height:46vh}
+.displayCard.graphFocusCard .legend{font-size:20px}
+.displayResultStack{display:grid;gap:24px}
+@media(min-width:1400px){.displayCard.graphFocusCard .chart{min-height:390px}.displayGrid.resultGrid{grid-template-columns:1fr 1fr}}
+
+
+/* v8.9 학생 내보내기 */
+.studentManageRow{display:flex!important;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:9px 10px!important;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+.studentManageInfo{flex:1;min-width:0}
+.studentManageActions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.studentManageActions .tinyBtn{margin-left:0}
+.kickBtn{background:#fff1f2!important;border-color:#fda4af!important;color:#be123c!important}
+.kickBtn:hover{background:#ffe4e6!important}
+.removedNotice{display:flex;flex-direction:column;gap:5px;margin:10px 0 18px;padding:15px 17px;border-radius:15px;background:#fff1f2;border:2px solid #fda4af;color:#9f1239}
+.removedNotice b{font-size:19px}.removedNotice span{font-weight:800}
+@media(max-width:700px){.studentManageRow{align-items:flex-start;flex-direction:column}.studentManageActions{width:100%;justify-content:flex-start}}
+
+.studentPrivacyNotice{margin-top:14px;padding:12px 16px;border-radius:14px;background:rgba(15,23,42,.06);display:flex;gap:10px;align-items:center;justify-content:center;text-align:center}.studentPrivacyNotice b{white-space:nowrap}.studentPrivacyNotice span{color:#475569;font-size:.95rem}
+
+
+/* v8.10.2 그래프 가독성 개선 */
+.chart .chartPoint{transition:r .15s ease,opacity .15s ease;opacity:.95}
+.chart .chartPoint:hover{r:5;opacity:1}
+.gridLines line{stroke:#edf0f5;stroke-width:1}
+.gridLines text,.xLabels text{font-size:16px;font-weight:900}
+.displayCard.graphFocusCard .legend{font-size:22px;gap:12px}
+.displayCard.graphFocusCard .chart{min-height:360px}
